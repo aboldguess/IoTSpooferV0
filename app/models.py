@@ -91,3 +91,22 @@ class DispatchResult(BaseModel):
     status_code: int | None = None
     message: str
     payload: TelemetryEvent
+
+
+class EndpointCheckResult(BaseModel):
+    """Result of actively probing whether a target endpoint is reachable/listening."""
+
+    listening: bool
+    status_code: int | None = None
+    message: str
+
+
+class DispatchReceipt(BaseModel):
+    """Stored debug receipt for each forwarding attempt."""
+
+    attempted_at_utc: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    endpoint_url: str
+    device_id: str
+    forwarded: bool
+    status_code: int | None = None
+    message: str

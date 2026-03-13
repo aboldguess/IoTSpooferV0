@@ -14,13 +14,13 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.models import CameraUploadRequest, DashboardTarget, DeviceCommand, DeviceProfile, DispatchResult
+from app.models import CameraUploadRequest, DashboardTarget, DeviceCommand, DeviceProfile, DispatchReceipt, DispatchResult, EndpointCheckResult
 from app.services.dispatcher import DispatcherService
 from app.services.simulator import SimulatorService
 
@@ -106,3 +106,18 @@ async def emit_event(device_id: str, target: DashboardTarget | None = None) -> D
         return DispatchResult(accepted=True, forwarded=False, message="Generated locally", payload=payload)
 
     return await dispatcher.forward(payload, target)
+
+
+@app.post("/api/endpoint/check", response_model=EndpointCheckResult)
+async def check_endpoint(target: DashboardTarget) -> EndpointCheckResult:
+    """Actively probe an endpoint to confirm it is listening/reachable."""
+    return await dispatcher.check_endpoint(target)
+
+
+@app.get("/api/endpoint/receipts", response_model=list[DispatchReceipt])
+def endpoint_receipts(
+    endpoint_url: str | None = Query(default=None, max_length=2048),
+    limit: int = Query(default=20, ge=1, le=100),
+) -> list[DispatchReceipt]:
+    """Return recent forwarding receipts for delivery verification and debugging."""
+    return dispatcher.list_receipts(endpoint_url=endpoint_url, limit=limit)
