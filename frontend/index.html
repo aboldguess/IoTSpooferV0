@@ -1,0 +1,86 @@
+<!--
+File Guide: frontend/index.html
+- Purpose: Main single-page UI for configuring virtual IoT devices and sending spoofed telemetry.
+- Structure: Header/help section, device creation form, controls panel, and event output console.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IoT Dashboard Spoofer</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>IoT Dashboard Spoofer</h1>
+      <p>Emulate multiple devices, spoof identities, and POST telemetry to your dashboard under test.</p>
+    </header>
+
+    <main class="container">
+      <section class="panel">
+        <h2>Quick Start (on-screen instructions)</h2>
+        <ol>
+          <li>Create one or more virtual devices with spoofed metadata.</li>
+          <li>Select a device, optionally attach a webcam frame for camera devices.</li>
+          <li>Set your dashboard ingest endpoint and authorization header (optional).</li>
+          <li>Click <strong>Generate & Send</strong> to emit test payloads.</li>
+        </ol>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2>1) Register / Update Device</h2>
+          <form id="device-form">
+            <label>Device ID <input name="id" required value="door-001" /></label>
+            <label>Device Name <input name="device_name" required value="Front Door Sensor" /></label>
+            <label>Device Type
+              <select name="device_type">
+                <option value="nb_iot_door_sensor">NB-IoT Door Sensor</option>
+                <option value="raspberry_pi_thermometer">Raspberry Pi Thermometer</option>
+                <option value="iot_camera">IoT Camera</option>
+                <option value="iot_switch">IoT Switch</option>
+              </select>
+            </label>
+            <label>Serial Number <input name="serial_number" required value="SN-DOOR-1001" /></label>
+            <label>Firmware Version <input name="firmware_version" value="1.0.0" /></label>
+            <label>Battery Voltage <input name="battery_voltage" type="number" step="0.01" value="3.7" /></label>
+            <label>Signal dBm <input name="signal_strength_dbm" type="number" value="-75" /></label>
+            <button type="submit">Save Device</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>2) Test Controls</h2>
+          <label>Select Device
+            <select id="device-select"></select>
+          </label>
+          <div class="row">
+            <label>Switch On/Off <input id="switch-state" type="checkbox" /></label>
+            <label>Switch Level 1-100 <input id="switch-level" type="range" min="1" max="100" value="50" /></label>
+          </div>
+          <button id="send-command">Apply Switch Command</button>
+
+          <h3>Camera Emulator</h3>
+          <video id="camera-preview" autoplay muted playsinline></video>
+          <div class="row">
+            <button id="start-camera">Start Webcam</button>
+            <button id="capture-frame">Capture Frame</button>
+          </div>
+
+          <h3>Dashboard Under Test Configuration</h3>
+          <label>Endpoint URL <input id="endpoint-url" placeholder="https://example.com/iot-ingest" /></label>
+          <label>Authorization Header (optional) <input id="auth-header" placeholder="Bearer ..." /></label>
+          <button id="emit-event">Generate & Send</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Debug Console</h2>
+        <pre id="output"></pre>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
