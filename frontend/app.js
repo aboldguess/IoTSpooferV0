@@ -8,6 +8,8 @@ const output = document.getElementById("output");
 const deviceForm = document.getElementById("device-form");
 const deviceSelect = document.getElementById("device-select");
 const emitBtn = document.getElementById("emit-event");
+const checkEndpointBtn = document.getElementById("check-endpoint");
+const viewReceiptsBtn = document.getElementById("view-receipts");
 const sendCommandBtn = document.getElementById("send-command");
 const startCameraBtn = document.getElementById("start-camera");
 const captureFrameBtn = document.getElementById("capture-frame");
@@ -15,6 +17,20 @@ const cameraVideo = document.getElementById("camera-preview");
 
 let stream = null;
 let latestCameraFrame = null;
+
+
+function readTargetConfig() {
+  const endpoint = document.getElementById("endpoint-url").value.trim();
+  const auth = document.getElementById("auth-header").value.trim();
+  if (!endpoint) {
+    return null;
+  }
+  return {
+    endpoint_url: endpoint,
+    auth_header_value: auth || null,
+    timeout_seconds: 8,
+  };
+}
 
 const log = (message, data = null) => {
   const stamp = new Date().toISOString();
@@ -111,19 +127,37 @@ captureFrameBtn.addEventListener("click", async () => {
   }
 });
 
+checkEndpointBtn.addEventListener("click", async () => {
+  const payload = readTargetConfig();
+  if (!payload) return log("Provide endpoint URL before checking listener status");
+
+  try {
+    const result = await api("/api/endpoint/check", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    log("Endpoint listener check result", result);
+  } catch (error) {
+    log(`Endpoint listener check failed: ${error.message}`);
+  }
+});
+
+viewReceiptsBtn.addEventListener("click", async () => {
+  const payload = readTargetConfig();
+  const query = payload ? `?endpoint_url=${encodeURIComponent(payload.endpoint_url)}&limit=20` : "?limit=20";
+  try {
+    const receipts = await api(`/api/endpoint/receipts${query}`);
+    log("Recent endpoint delivery receipts", receipts);
+  } catch (error) {
+    log(`Unable to fetch delivery receipts: ${error.message}`);
+  }
+});
+
 emitBtn.addEventListener("click", async () => {
   const id = deviceSelect.value;
   if (!id) return log("No device selected for emit action");
 
-  const endpoint = document.getElementById("endpoint-url").value.trim();
-  const auth = document.getElementById("auth-header").value.trim();
-  const payload = endpoint
-    ? {
-        endpoint_url: endpoint,
-        auth_header_value: auth || null,
-        timeout_seconds: 8,
-      }
-    : null;
+  const payload = readTargetConfig();
 
   try {
     const result = await api(`/api/devices/${encodeURIComponent(id)}/emit`, {

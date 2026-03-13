@@ -155,8 +155,10 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 4. For switch devices: set on/off and level, then click **Apply Switch Command**.
 5. For camera devices: click **Start Webcam**, then **Capture Frame**.
 6. In **Dashboard Under Test Configuration**, add endpoint URL (and optional auth header).
-7. Click **Generate & Send**.
-8. Check **Debug Console** for payload and forwarding result.
+7. Click **Check Endpoint Listener** first to confirm the target endpoint is reachable.
+8. Click **Generate & Send**.
+9. Click **Show Delivery Receipts** to inspect recent send attempts for that endpoint.
+10. Check **Debug Console** for payload, listener-check, and forwarding results.
 
 ---
 
@@ -228,6 +230,8 @@ Most dashboards expect an HTTP ingestion endpoint. Configure it like this:
 
 - Server logs include event generation and forwarding status.
 - Use `/api/health` to confirm backend is up.
+- Use `/api/endpoint/check` to verify the remote endpoint is listening.
+- Use `/api/endpoint/receipts` to review recent forwarding attempts and status codes.
 - If forwarding fails, check:
   - endpoint URL correctness
   - TLS/cert validity
@@ -244,6 +248,7 @@ Most dashboards expect an HTTP ingestion endpoint. Configure it like this:
 - [x] Door sensor, thermometer, camera, switch profiles
 - [x] Webcam capture for camera simulation
 - [x] Dashboard endpoint forwarding with auth header
+- [x] Endpoint listener check + recent delivery receipts in UI
 - [ ] Scheduled auto-emission per device (interval runner)
 - [ ] Payload templates + scenario presets (normal/day/night/alarm)
 - [ ] CSV export of generated test telemetry
@@ -252,6 +257,7 @@ Most dashboards expect an HTTP ingestion endpoint. Configure it like this:
 
 - [x] Typed validation models and centralized simulation service
 - [x] Basic test suite for simulator
+- [x] Dispatcher receipt tracking for debugging forwarding behavior
 - [ ] Persistent storage for device profiles
 - [ ] Role-based authentication (admin/tester)
 - [ ] Rate limiting and API key support
@@ -262,6 +268,7 @@ Most dashboards expect an HTTP ingestion endpoint. Configure it like this:
 ## Major feature log (in order added)
 
 - **Branch `work`**: Initial full-stack IoT dashboard spoofer with multi-device simulation, webcam camera emulation, endpoint forwarding, test suite, scripts, and deployment blueprint.
+- **Branch `work`**: Added endpoint listener checks and delivery receipts so users can confirm endpoints are reachable and receiving traffic.
 
 ---
 

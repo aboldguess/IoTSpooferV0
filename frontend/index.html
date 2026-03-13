@@ -88,7 +88,11 @@ File Guide: frontend/index.html
           <h3>Dashboard Under Test Configuration</h3>
           <label>Endpoint URL <input id="endpoint-url" value="http://192.168.56.1:8001/api/iot-ingest" placeholder="https://example.com/iot-ingest" /></label>
           <label>Authorization Header (optional) <input id="auth-header" placeholder="Bearer &lt;your-dashboard-api-token&gt;" /></label>
-          <button id="emit-event">Generate & Send</button>
+          <div class="row">
+            <button id="check-endpoint">Check Endpoint Listener</button>
+            <button id="view-receipts">Show Delivery Receipts</button>
+            <button id="emit-event">Generate &amp; Send</button>
+          </div>
         </div>
       </section>
 
