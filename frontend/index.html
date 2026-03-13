@@ -26,6 +26,23 @@ File Guide: frontend/index.html
           <li>Set your dashboard ingest endpoint and authorization header (optional).</li>
           <li>Click <strong>Generate & Send</strong> to emit test payloads.</li>
         </ol>
+        <div class="example-card">
+          <h3>Example for your current setup (192.168.56.1:8001)</h3>
+          <p>
+            Your spoofed devices should POST JSON to your dashboard ingest route, not just the dashboard home page.
+            Start with this template and replace the path if your backend uses a different one.
+          </p>
+          <ul>
+            <li><strong>Endpoint URL:</strong> <code>http://192.168.56.1:8001/api/iot-ingest</code></li>
+            <li><strong>Authorization header:</strong> <code>Bearer &lt;your-dashboard-api-token&gt;</code></li>
+            <li><strong>HTTP method:</strong> <code>POST</code></li>
+            <li><strong>Content-Type:</strong> <code>application/json</code> (automatically set by this app)</li>
+          </ul>
+          <p class="hint">
+            If your dashboard requires a custom auth scheme, paste the full header value exactly as expected
+            (for example <code>Token abc123</code>).
+          </p>
+        </div>
       </section>
 
       <section class="grid">
@@ -69,8 +86,8 @@ File Guide: frontend/index.html
           </div>
 
           <h3>Dashboard Under Test Configuration</h3>
-          <label>Endpoint URL <input id="endpoint-url" placeholder="https://example.com/iot-ingest" /></label>
-          <label>Authorization Header (optional) <input id="auth-header" placeholder="Bearer ..." /></label>
+          <label>Endpoint URL <input id="endpoint-url" value="http://192.168.56.1:8001/api/iot-ingest" placeholder="https://example.com/iot-ingest" /></label>
+          <label>Authorization Header (optional) <input id="auth-header" placeholder="Bearer &lt;your-dashboard-api-token&gt;" /></label>
           <button id="emit-event">Generate & Send</button>
         </div>
       </section>
