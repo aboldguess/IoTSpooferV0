@@ -1,0 +1,10 @@
+# File Guide: render.yaml
+# - Purpose: Render.com blueprint for one web service deployment.
+services:
+  - type: web
+    name: iot-dashboard-spoofer
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true

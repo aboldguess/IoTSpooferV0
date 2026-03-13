@@ -1,0 +1,102 @@
+/*
+File Guide: frontend/styles.css
+- Purpose: Provide modern, professional styling for the IoT spoofing UI.
+- Structure: Layout primitives, panels/forms, responsive behavior, and utility classes.
+*/
+:root {
+  color-scheme: dark;
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --text: #e2e8f0;
+  --accent: #38bdf8;
+  --muted: #94a3b8;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Segoe UI, sans-serif;
+  background: radial-gradient(circle at top, #1e293b 0%, #0b1220 60%);
+  color: var(--text);
+}
+
+.topbar {
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+}
+
+.container {
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.panel {
+  background: rgba(30, 41, 59, 0.88);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+  color: var(--muted);
+}
+
+input,
+select,
+button {
+  border-radius: 8px;
+  border: 1px solid #475569;
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: #0f172a;
+}
+
+button {
+  cursor: pointer;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  border: none;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+button:hover { filter: brightness(1.1); }
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#camera-preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #475569;
+  margin-bottom: 0.75rem;
+}
+
+#output {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.8rem;
+}
