@@ -74,6 +74,7 @@ label {
 
 input,
 select,
+textarea,
 button {
   border-radius: 8px;
   border: 1px solid #475569;
@@ -117,4 +118,14 @@ button:hover { filter: brightness(1.1); }
   border: 1px solid #334155;
   border-radius: 8px;
   padding: 0.8rem;
+}
+
+
+textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.mqtt-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }

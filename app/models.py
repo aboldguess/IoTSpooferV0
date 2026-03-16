@@ -1,13 +1,13 @@
 """Data models for the IoT spoofing platform.
 
 Purpose:
-- Define strongly typed request/response objects.
+- Define strongly typed request/response objects for HTTP and MQTT workflows.
 - Keep payload validation and schema generation in one place.
 
 Structure:
 - Enum values for device categories.
 - Device profile/config models.
-- Telemetry event and dispatch response models.
+- Telemetry event, MQTT, and dispatch response models.
 """
 
 from __future__ import annotations
@@ -40,12 +40,58 @@ class DeviceProfile(BaseModel):
 
 
 class DashboardTarget(BaseModel):
-    """Target endpoint for forwarding synthetic telemetry."""
+    """Target endpoint for forwarding synthetic telemetry over HTTP."""
 
     endpoint_url: HttpUrl
     auth_header_value: str | None = Field(default=None, max_length=500)
     timeout_seconds: int = Field(default=8, ge=1, le=30)
 
+
+class MqttBrokerConfig(BaseModel):
+    """Connection details for Mosquitto-compatible brokers."""
+
+    host: str = Field(..., min_length=1, max_length=255)
+    port: int = Field(default=1883, ge=1, le=65535)
+    username: str | None = Field(default=None, max_length=128)
+    password: str | None = Field(default=None, max_length=512)
+    client_id: str = Field(default="iot-spoofer-client", min_length=3, max_length=120)
+    keepalive_seconds: int = Field(default=30, ge=10, le=120)
+    tls_enabled: bool = False
+
+
+class MqttPublishRequest(BaseModel):
+    """Request payload for publishing arbitrary MQTT messages."""
+
+    topic: str = Field(..., min_length=1, max_length=256)
+    payload: dict[str, Any] | str
+    qos: int = Field(default=1, ge=0, le=2)
+    retain: bool = False
+
+
+class MqttSubscribeRequest(BaseModel):
+    """Request payload for subscribing to an MQTT topic and waiting for a message."""
+
+    topic: str = Field(..., min_length=1, max_length=256)
+    qos: int = Field(default=1, ge=0, le=2)
+    wait_seconds: int = Field(default=6, ge=1, le=30)
+
+
+class SensorEnrollment(BaseModel):
+    """Mapping from emulated device to MQTT topic for publishing telemetry."""
+
+    device_id: str = Field(..., min_length=3, max_length=64)
+    topic: str = Field(..., min_length=1, max_length=256)
+    qos: int = Field(default=1, ge=0, le=2)
+    retain: bool = False
+    created_at_utc: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+
+
+class MqttEmitRequest(BaseModel):
+    """Request to emit generated telemetry to enrolled MQTT topic."""
+
+    broker: MqttBrokerConfig
 
 class DeviceCommand(BaseModel):
     """Command model for toggles/scales applied to a simulated device."""
@@ -99,6 +145,15 @@ class EndpointCheckResult(BaseModel):
     listening: bool
     status_code: int | None = None
     message: str
+
+
+class MqttActionResult(BaseModel):
+    """Result object for MQTT actions such as connect/publish/subscribe."""
+
+    success: bool
+    message: str
+    topic: str | None = None
+    payload: dict[str, Any] | str | None = None
 
 
 class DispatchReceipt(BaseModel):

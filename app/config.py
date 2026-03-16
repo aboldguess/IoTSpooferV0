@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     cors_origins: str = "*"
     max_camera_image_bytes: int = 2_500_000
 
+    mqtt_default_host: str = "localhost"
+    mqtt_default_port: int = 1883
+    mqtt_default_client_id: str = "iot-spoofer-client"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 

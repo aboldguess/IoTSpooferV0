@@ -2,11 +2,12 @@
 
 Purpose:
 - Expose APIs and a lightweight UI for emulating IoT devices.
+- Provide both HTTP and MQTT workflows for connectivity and telemetry tests.
 - Serve static frontend assets for local and cloud deployment.
 
 Structure:
 - App initialization and middleware.
-- API routes for device management, event generation, and forwarding.
+- API routes for device management, event generation, HTTP forwarding, and MQTT operations.
 - Static file hosting for the browser client.
 """
 
@@ -20,8 +21,22 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.models import CameraUploadRequest, DashboardTarget, DeviceCommand, DeviceProfile, DispatchReceipt, DispatchResult, EndpointCheckResult
+from app.models import (
+    CameraUploadRequest,
+    DashboardTarget,
+    DeviceCommand,
+    DeviceProfile,
+    DispatchReceipt,
+    DispatchResult,
+    EndpointCheckResult,
+    MqttBrokerConfig,
+    MqttEmitRequest,
+    MqttPublishRequest,
+    MqttSubscribeRequest,
+    SensorEnrollment,
+)
 from app.services.dispatcher import DispatcherService
+from app.services.mqtt_service import MqttService
 from app.services.simulator import SimulatorService
 
 logging.basicConfig(
@@ -32,8 +47,9 @@ logger = logging.getLogger(__name__)
 
 simulator = SimulatorService()
 dispatcher = DispatcherService()
+mqtt_service = MqttService()
 
-app = FastAPI(title=settings.app_name, version="1.0.0")
+app = FastAPI(title=settings.app_name, version="2.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
@@ -121,3 +137,67 @@ def endpoint_receipts(
 ) -> list[DispatchReceipt]:
     """Return recent forwarding receipts for delivery verification and debugging."""
     return dispatcher.list_receipts(endpoint_url=endpoint_url, limit=limit)
+
+
+@app.post("/api/mqtt/connect")
+def mqtt_connect_test(config: MqttBrokerConfig) -> dict:
+    """Validate broker credentials and network reachability."""
+    result = mqtt_service.test_connection(config)
+    return result.model_dump()
+
+
+@app.post("/api/mqtt/publish")
+def mqtt_publish(config: MqttBrokerConfig, request: MqttPublishRequest) -> dict:
+    """Publish arbitrary payloads to a broker topic for integration tests."""
+    result = mqtt_service.publish(config, request)
+    return result.model_dump()
+
+
+@app.post("/api/mqtt/subscribe")
+def mqtt_subscribe(config: MqttBrokerConfig, request: MqttSubscribeRequest) -> dict:
+    """Subscribe and wait for one message to verify pub/sub behavior."""
+    result = mqtt_service.subscribe_once(config, request)
+    return result.model_dump()
+
+
+@app.post("/api/mqtt/enroll")
+def enroll_sensor(enrollment: SensorEnrollment) -> dict:
+    """Enroll a simulated sensor with a destination MQTT topic."""
+    if enrollment.device_id not in {d.profile.id for d in simulator.list_devices()}:
+        raise HTTPException(status_code=404, detail="Device not found; create it before enrollment")
+    saved = mqtt_service.upsert_enrollment(enrollment)
+    return {"message": "Enrollment saved", "enrollment": saved.model_dump()}
+
+
+@app.get("/api/mqtt/enrollments")
+def list_enrollments() -> list[dict]:
+    return [enrollment.model_dump() for enrollment in mqtt_service.list_enrollments()]
+
+
+@app.post("/api/devices/{device_id}/emit/mqtt")
+def emit_to_mqtt(device_id: str, request: MqttEmitRequest) -> dict:
+    """Generate telemetry and publish to the enrolled sensor MQTT topic."""
+    if device_id not in {d.profile.id for d in simulator.list_devices()}:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    enrollment = mqtt_service.get_enrollment(device_id)
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Sensor not enrolled; call /api/mqtt/enroll first")
+
+    payload = simulator.generate_event(device_id).model_dump()
+    publish_result = mqtt_service.publish(
+        request.broker,
+        MqttPublishRequest(
+            topic=enrollment.topic,
+            payload=payload,
+            qos=enrollment.qos,
+            retain=enrollment.retain,
+        ),
+    )
+    return {
+        "message": "Telemetry generated and MQTT publish attempted",
+        "device_id": device_id,
+        "topic": enrollment.topic,
+        "publish_result": publish_result.model_dump(),
+        "payload": payload,
+    }

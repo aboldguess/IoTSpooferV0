@@ -1,7 +1,7 @@
 <!--
 File Guide: frontend/index.html
-- Purpose: Main single-page UI for configuring virtual IoT devices and sending spoofed telemetry.
-- Structure: Header/help section, device creation form, controls panel, and event output console.
+- Purpose: Main single-page UI for configuring virtual devices and testing HTTP/MQTT integration.
+- Structure: Header/help section, device creation form, controls for HTTP + MQTT tests, and debug output.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -14,50 +14,18 @@ File Guide: frontend/index.html
   <body>
     <header class="topbar">
       <h1>IoT Dashboard Spoofer</h1>
-      <p>Emulate multiple devices, spoof identities, and POST telemetry to your dashboard under test.</p>
+      <p>Emulate sensors, verify Mosquitto MQTT connectivity, and test pub/sub + sensor enrollment workflows.</p>
     </header>
 
     <main class="container">
       <section class="panel">
         <h2>Quick Start (on-screen instructions)</h2>
         <ol>
-          <li>Create one or more virtual devices with spoofed metadata.</li>
-          <li>Select a device, optionally attach a webcam frame for camera devices.</li>
-          <li>Set your dashboard ingest endpoint and authorization header.</li>
-          <li>Click <strong>Generate & Send</strong> to emit test payloads.</li>
+          <li>Create a virtual sensor profile.</li>
+          <li>Set MQTT broker details and click <strong>Test MQTT Connection</strong>.</li>
+          <li>Enroll sensor topic (example: <code>sensors/door/front</code>).</li>
+          <li>Use MQTT publish/subscribe controls and <strong>Emit Sensor Telemetry via MQTT</strong>.</li>
         </ol>
-        <div class="example-card">
-          <h3>Device API Integration Template (your current dashboard setup)</h3>
-          <p>
-            From IoT devices on the same network, post sensor data to:
-            <code>http://192.168.56.1:8001/api/sensor/publish</code>
-          </p>
-          <ul>
-            <li><strong>Recommended header:</strong> <code>Authorization: Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code></li>
-            <li><strong>Alternative header:</strong> <code>X-API-Key: aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code></li>
-            <li><strong>Legacy fallback:</strong> Include <code>api_key=aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code> in form data.</li>
-          </ul>
-          <p><strong>Device curl template:</strong></p>
-          <pre>curl -X POST http://192.168.56.1:8001/api/sensor/publish \
-  -H "Authorization: Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc" \
-  -F "topic=sensors/temp" \
-  -F "value=24.8"</pre>
-          <h4>Dashboard config notes for this spoofer</h4>
-          <p>
-            This spoofer sends JSON telemetry, so configure your dashboard ingestion service to also accept JSON POST requests
-            at the same URL (or route JSON traffic to an equivalent endpoint). Use the Authorization header value below.
-          </p>
-          <ul>
-            <li><strong>Endpoint URL:</strong> <code>http://192.168.56.1:8001/api/sensor/publish</code></li>
-            <li><strong>Authorization header:</strong> <code>Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code></li>
-            <li><strong>HTTP method:</strong> <code>POST</code></li>
-            <li><strong>Content-Type:</strong> <code>application/json</code> (automatically set by this app)</li>
-          </ul>
-          <p class="hint">
-            If your dashboard requires a custom auth scheme, paste the full header value exactly as expected
-            (for example <code>Token abc123</code>).
-          </p>
-        </div>
       </section>
 
       <section class="grid">
@@ -83,7 +51,7 @@ File Guide: frontend/index.html
         </div>
 
         <div class="panel">
-          <h2>2) Test Controls</h2>
+          <h2>2) Sensor + HTTP Controls</h2>
           <label>Select Device
             <select id="device-select"></select>
           </label>
@@ -100,19 +68,46 @@ File Guide: frontend/index.html
             <button id="capture-frame">Capture Frame</button>
           </div>
 
-          <h3>Dashboard Under Test Configuration</h3>
-          <label>Endpoint URL <input id="endpoint-url" value="http://192.168.56.1:8001/api/sensor/publish" placeholder="https://example.com/iot-ingest" /></label>
-          <label>Authorization Header (optional) <input id="auth-header" value="Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc" placeholder="Bearer &lt;your-dashboard-api-token&gt;" /></label>
+          <h3>HTTP Forwarding (optional)</h3>
+          <label>Endpoint URL <input id="endpoint-url" value="http://localhost:8001/api/sensor/publish" /></label>
+          <label>Authorization Header (optional) <input id="auth-header" placeholder="Bearer <token>" /></label>
           <div class="row">
             <button id="check-endpoint">Check Endpoint Listener</button>
             <button id="send-verify">Send + Verify Receipt</button>
             <button id="view-receipts">Show Delivery Receipts</button>
-            <button id="emit-event">Generate &amp; Send</button>
+            <button id="emit-event">Generate &amp; Send (HTTP)</button>
           </div>
-          <p class="hint">
-            Door sensor test case: keep device type as <code>NB-IoT Door Sensor</code>, click <strong>Send + Verify Receipt</strong>,
-            and confirm your dashboard shows <code>readings.door_closed</code> toggling true/false while this app logs an HTTP 2xx receipt.
-          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>3) Mosquitto MQTT Integration</h2>
+        <div class="grid mqtt-grid">
+          <div>
+            <label>Broker Host <input id="mqtt-host" value="localhost" /></label>
+            <label>Broker Port <input id="mqtt-port" type="number" value="1883" /></label>
+            <label>MQTT Client ID <input id="mqtt-client-id" value="iot-spoofer-client" /></label>
+            <label>Username (optional) <input id="mqtt-username" /></label>
+            <label>Password (optional) <input id="mqtt-password" type="password" /></label>
+            <label><input id="mqtt-tls" type="checkbox" /> Enable TLS</label>
+            <button id="mqtt-test-connection">Test MQTT Connection</button>
+          </div>
+          <div>
+            <label>Topic for Publish/Subscribe <input id="mqtt-topic" value="sensors/door/front" /></label>
+            <label>QoS <input id="mqtt-qos" type="number" min="0" max="2" value="1" /></label>
+            <label>Payload JSON for manual publish
+              <textarea id="mqtt-payload" rows="4">{"source":"ui-test","value":1}</textarea>
+            </label>
+            <div class="row">
+              <button id="mqtt-publish">Publish Test Message</button>
+              <button id="mqtt-subscribe">Subscribe Once</button>
+            </div>
+            <div class="row">
+              <button id="mqtt-enroll">Enroll Selected Sensor Topic</button>
+              <button id="mqtt-emit-enrolled">Emit Sensor Telemetry via MQTT</button>
+              <button id="mqtt-list-enrollments">Show Enrollments</button>
+            </div>
+          </div>
         </div>
       </section>
 
