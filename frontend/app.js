@@ -10,6 +10,7 @@ const deviceSelect = document.getElementById("device-select");
 const emitBtn = document.getElementById("emit-event");
 const checkEndpointBtn = document.getElementById("check-endpoint");
 const viewReceiptsBtn = document.getElementById("view-receipts");
+const sendVerifyBtn = document.getElementById("send-verify");
 const sendCommandBtn = document.getElementById("send-command");
 const startCameraBtn = document.getElementById("start-camera");
 const captureFrameBtn = document.getElementById("capture-frame");
@@ -30,6 +31,22 @@ function readTargetConfig() {
     auth_header_value: auth || null,
     timeout_seconds: 8,
   };
+}
+
+
+async function emitForSelectedDevice() {
+  const id = deviceSelect.value;
+  if (!id) {
+    log("No device selected for emit action");
+    return null;
+  }
+
+  const payload = readTargetConfig();
+  const result = await api(`/api/devices/${encodeURIComponent(id)}/emit`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return { id, payload, result };
 }
 
 const log = (message, data = null) => {
@@ -154,19 +171,43 @@ viewReceiptsBtn.addEventListener("click", async () => {
 });
 
 emitBtn.addEventListener("click", async () => {
-  const id = deviceSelect.value;
-  if (!id) return log("No device selected for emit action");
-
-  const payload = readTargetConfig();
-
   try {
-    const result = await api(`/api/devices/${encodeURIComponent(id)}/emit`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    log("Event generated", result);
+    const emitted = await emitForSelectedDevice();
+    if (emitted) {
+      log("Event generated", emitted.result);
+    }
   } catch (error) {
     log(`Error generating event: ${error.message}`);
+  }
+});
+
+sendVerifyBtn.addEventListener("click", async () => {
+  try {
+    const emitted = await emitForSelectedDevice();
+    if (!emitted) return;
+
+    log("Event generated (verification run)", emitted.result);
+
+    if (!emitted.payload?.endpoint_url) {
+      log("Verification skipped: no endpoint configured for receipt lookup");
+      return;
+    }
+
+    const receipts = await api(`/api/endpoint/receipts?endpoint_url=${encodeURIComponent(emitted.payload.endpoint_url)}&limit=1`);
+    const latest = receipts[0];
+    if (!latest) {
+      log("Verification warning: no receipt found for endpoint yet", receipts);
+      return;
+    }
+
+    const statusCode = latest.status_code ?? 0;
+    if (statusCode >= 200 && statusCode < 300) {
+      log("Verification PASSED: data sent and dashboard returned success", latest);
+    } else {
+      log("Verification FAILED: dashboard did not return 2xx", latest);
+    }
+  } catch (error) {
+    log(`Send + verify failed: ${error.message}`);
   }
 });
 

@@ -23,18 +23,33 @@ File Guide: frontend/index.html
         <ol>
           <li>Create one or more virtual devices with spoofed metadata.</li>
           <li>Select a device, optionally attach a webcam frame for camera devices.</li>
-          <li>Set your dashboard ingest endpoint and authorization header (optional).</li>
+          <li>Set your dashboard ingest endpoint and authorization header.</li>
           <li>Click <strong>Generate & Send</strong> to emit test payloads.</li>
         </ol>
         <div class="example-card">
-          <h3>Example for your current setup (192.168.56.1:8001)</h3>
+          <h3>Device API Integration Template (your current dashboard setup)</h3>
           <p>
-            Your spoofed devices should POST JSON to your dashboard ingest route, not just the dashboard home page.
-            Start with this template and replace the path if your backend uses a different one.
+            From IoT devices on the same network, post sensor data to:
+            <code>http://192.168.56.1:8001/api/sensor/publish</code>
           </p>
           <ul>
-            <li><strong>Endpoint URL:</strong> <code>http://192.168.56.1:8001/api/iot-ingest</code></li>
-            <li><strong>Authorization header:</strong> <code>Bearer &lt;your-dashboard-api-token&gt;</code></li>
+            <li><strong>Recommended header:</strong> <code>Authorization: Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code></li>
+            <li><strong>Alternative header:</strong> <code>X-API-Key: aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code></li>
+            <li><strong>Legacy fallback:</strong> Include <code>api_key=aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code> in form data.</li>
+          </ul>
+          <p><strong>Device curl template:</strong></p>
+          <pre>curl -X POST http://192.168.56.1:8001/api/sensor/publish \
+  -H "Authorization: Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc" \
+  -F "topic=sensors/temp" \
+  -F "value=24.8"</pre>
+          <h4>Dashboard config notes for this spoofer</h4>
+          <p>
+            This spoofer sends JSON telemetry, so configure your dashboard ingestion service to also accept JSON POST requests
+            at the same URL (or route JSON traffic to an equivalent endpoint). Use the Authorization header value below.
+          </p>
+          <ul>
+            <li><strong>Endpoint URL:</strong> <code>http://192.168.56.1:8001/api/sensor/publish</code></li>
+            <li><strong>Authorization header:</strong> <code>Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc</code></li>
             <li><strong>HTTP method:</strong> <code>POST</code></li>
             <li><strong>Content-Type:</strong> <code>application/json</code> (automatically set by this app)</li>
           </ul>
@@ -86,13 +101,18 @@ File Guide: frontend/index.html
           </div>
 
           <h3>Dashboard Under Test Configuration</h3>
-          <label>Endpoint URL <input id="endpoint-url" value="http://192.168.56.1:8001/api/iot-ingest" placeholder="https://example.com/iot-ingest" /></label>
-          <label>Authorization Header (optional) <input id="auth-header" placeholder="Bearer &lt;your-dashboard-api-token&gt;" /></label>
+          <label>Endpoint URL <input id="endpoint-url" value="http://192.168.56.1:8001/api/sensor/publish" placeholder="https://example.com/iot-ingest" /></label>
+          <label>Authorization Header (optional) <input id="auth-header" value="Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc" placeholder="Bearer &lt;your-dashboard-api-token&gt;" /></label>
           <div class="row">
             <button id="check-endpoint">Check Endpoint Listener</button>
+            <button id="send-verify">Send + Verify Receipt</button>
             <button id="view-receipts">Show Delivery Receipts</button>
             <button id="emit-event">Generate &amp; Send</button>
           </div>
+          <p class="hint">
+            Door sensor test case: keep device type as <code>NB-IoT Door Sensor</code>, click <strong>Send + Verify Receipt</strong>,
+            and confirm your dashboard shows <code>readings.door_closed</code> toggling true/false while this app logs an HTTP 2xx receipt.
+          </p>
         </div>
       </section>
 

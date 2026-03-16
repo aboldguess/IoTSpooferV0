@@ -164,9 +164,32 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ## How to configure your dashboard under test
 
-Most dashboards expect an HTTP ingestion endpoint. Configure it like this:
+### Device API Integration template (current setup)
 
-1. Create an endpoint in your dashboard/backend that accepts JSON `POST` requests.
+From your IoT devices on the same network, post sensor data to:
+
+- `http://192.168.56.1:8001/api/sensor/publish`
+
+Supported auth options:
+
+- Recommended header: `Authorization: Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc`
+- Alternative header: `X-API-Key: aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc`
+- Legacy form field: include `api_key=aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc`
+
+Example curl template for physical/virtual devices:
+
+```bash
+curl -X POST http://192.168.56.1:8001/api/sensor/publish \
+  -H "Authorization: Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc" \
+  -F "topic=sensors/temp" \
+  -F "value=24.8"
+```
+
+### Dashboard-side configuration notes
+
+When using this spoofer, configure your dashboard ingestion stack to accept JSON `POST` telemetry as well:
+
+1. Ensure `http://192.168.56.1:8001/api/sensor/publish` (or a mapped equivalent route) accepts JSON requests.
 2. Accept these fields from incoming payload:
    - `device_id`
    - `device_name`
@@ -177,13 +200,30 @@ Most dashboards expect an HTTP ingestion endpoint. Configure it like this:
    - `timestamp_utc`
    - `readings` (object; differs per device type)
    - `debug.sequence`
-3. If auth is required, configure the app's **Authorization Header** (e.g., `Bearer <token>`).
-4. Return a `2xx` response on successful ingestion.
-5. Use dashboard rules/visuals for each device type:
+3. Set Authorization to: `Bearer aYL5A00u1oFbOmmEyu2ZO262krDUNW0jBw0ApS53Dhc` (or match an equivalent accepted auth mode server-side).
+4. Return a `2xx` response on successful ingestion so the spoofer receipt check can prove delivery.
+5. Build dashboard rules/visuals for each device type:
    - door sensor: use `readings.door_closed`
    - thermometer: use `readings.temperature_c`
    - camera: use `readings.motion_detected` and optionally `readings.image_data_url`
    - switch: use `readings.switch_on` + `readings.level`
+
+### Simple proof test: data definitely sent and received
+
+1. In the UI, keep the default endpoint and auth values.
+2. Register/select a `NB-IoT Door Sensor` device (example: `door-001`).
+3. Click **Send + Verify Receipt**.
+4. Confirm in the debug console you see `Verification PASSED: data sent and dashboard returned success` with an HTTP `2xx` status code.
+5. Confirm your dashboard updates a door signal (e.g., `readings.door_closed=true/false`).
+
+### Door open/close test case example
+
+- Device type: `nb_iot_door_sensor`
+- Device ID: `door-001`
+- Expected signal path: `readings.door_closed`
+- Suggested dashboard behavior:
+  - `true` => **Door Closed**
+  - `false` => **Door Open**
 
 ### Example payload
 
